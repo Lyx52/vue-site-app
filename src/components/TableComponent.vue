@@ -1,5 +1,6 @@
 <template>
-    <div class="tableClass">
+    <div class="tableClass overflow-auto resize-handle">
+        <!--Print header-->
         <b-card v-if="printView">
             <h1>Test print</h1>
             <p>Test 123 123 123
@@ -7,35 +8,54 @@
             </p>
         </b-card>
         <form v-if="!printView" class="form-inline mt-1 mb-1">
-            <b-button v-on:click="saveTableData()" class="tableButtons" v-if="canEdit">Save table</b-button>
-            <b-button v-on:click="printTable()" class="tableButtons">Print table</b-button>
-            <b-form-input v-model="keyword" placeholder="Search" class="tableSearch"></b-form-input>
-            <label class="ml-2">Table:</label>
-            <b-form-select v-model="selectedTableID" class="ml-2" v-on:change="updateTable">
-                <b-form-select-option :value="null" v-if="!selectedTableID">Please select an option</b-form-select-option>
-                <b-form-select-option value="0">Male athletes</b-form-select-option>
-                <b-form-select-option value="1">Female athletes</b-form-select-option>
+            <!--Save/Print table-->
+            <b-form-checkbox id="checkAll" class="ml-3 w-20" v-if="canEdit && !printView" v-on:change="toggleAll"/>
+            <b-button v-on:click="saveTableData()" class="tableButtons w-auto" v-if="canEdit">Saglabāt tabulu</b-button>
+            <b-button v-if="canEdit && !printView" v-on:click="printTable()" class="tableButtons w-auto">Printēt tabulu</b-button>
+
+            <!--Search fields-->
+            <b-form-input v-model="keyword" placeholder="Meklēt..." class="tableSearch ml-2"></b-form-input>
+
+            <!--Select table-->
+            <b-form-select v-model="selectedTableID" class="ml-2 col-auto" v-on:change="updateTable">
+                <b-form-select-option :value="null" v-if="!selectedTableID">Izvēlieties sportistu grupu</b-form-select-option>
+                <b-form-select-option value="0">Vīrieši</b-form-select-option>
+                <b-form-select-option value="1">Sievietes</b-form-select-option>
             </b-form-select>
-            <label class="ml-2">Run Nr:</label>
-            <b-form-select v-model="selectedRunNr" class="ml-2" v-on:change="updateTable">
-                <b-form-select-option :value="null" v-if="!selectedRunNr">Please select an option</b-form-select-option>
-                <b-form-select-option value="0">Get all runs</b-form-select-option>
-                <b-form-select-option value="1">Run Nr 1</b-form-select-option>
-                <b-form-select-option value="2">Run Nr 2</b-form-select-option>
-                <b-form-select-option value="3">Run Nr 3</b-form-select-option>
-                <b-form-select-option value="4">Run Nr 4</b-form-select-option>
-                <b-form-select-option value="5">Run Nr 5</b-form-select-option>
-                <b-form-select-option value="6">Run Nr 6</b-form-select-option>
-                <b-form-select-option value="7">Run Nr 7</b-form-select-option>
-                <b-form-select-option value="8">Run Nr 8</b-form-select-option>
-                <b-form-select-option value="9">Run Nr 9</b-form-select-option>
-                <b-form-select-option value="10">Run Nr 10</b-form-select-option>
+
+            <!--Select run-->
+            <b-form-select v-model="selectedRunNr" class="ml-2 col-auto" v-on:change="updateTable">
+                <b-form-select-option :value="null" v-if="!selectedRunNr">Izvēlieties skrējienu</b-form-select-option>
+                <b-form-select-option value="0">Visi skrējieni</b-form-select-option>
+                <b-form-select-option v-for="index in 10" :key="index" :value="index">{{ index }} Skrējiens</b-form-select-option>
             </b-form-select>
         </form>
-        <b-table striped hover :items="getItems" :busy="isBusy" :fields="fields">
-            <template v-if="canEdit && !printView" v-slot:cell(result)="row">
-                <b-form-input v-model="row.item.result"/>
+        <b-table striped hover class="container-fluid" :items="getItems" :busy="isBusy" :fields="fields" :per-page="maxPerPage" :current-page="currentPage" :sort-by.sync="sortBy" responsive="sm">
+            <!--Table input-->
+            <template v-if="canEdit && isAdmin && !printView" v-slot:cell(checked)="row">
+                <b-form-checkbox-group>
+                    <b-form-checkbox v-model="selected" :value="{'athleteNr': row.item.athleteNr, 'runNr': row.item.runNr}" class="w-auto mt-2 ml-1 mr-auto"/>
+                </b-form-checkbox-group>
             </template>
+            <template v-if="canEdit && !printView" v-slot:cell(name)="row">
+                <b-form-input v-model="row.item.name" v-on:click="toggleSorting"/>
+            </template>
+            <template v-if="canEdit && !printView" v-slot:cell(school)="row">
+                <b-form-input v-model="row.item.school" v-on:click="toggleSorting"/>
+            </template>
+            <template v-if="canEdit && !printView" v-slot:cell(birthyear)="row">
+                <b-form-input type="number" min="1900" max="2100" step="1" v-model="row.item.birthyear" v-on:click="toggleSorting"/>
+            </template>
+            <template v-if="canEdit && !printView" v-slot:cell(runNr)="row">
+                <b-form-input type="number" v-model="row.item.runNr" v-on:click="toggleSorting"/>
+            </template>
+            <template v-if="canEdit && !printView" v-slot:cell(athleteNr)="row">
+                <b-form-input type="number" v-model="row.item.athleteNr" v-on:click="toggleSorting"/>
+            </template>
+            <template v-if="canEdit && !printView" v-slot:cell(result)="row">
+                <b-form-input type="number" v-model="row.item.result" v-on:click="toggleSorting"/>
+            </template>
+            <!--Table busy animation-->
             <template v-slot:table-busy>
                 <div class="text-center text-danger my-2">
                     <b-spinner class="align-middle"></b-spinner>
@@ -43,91 +63,221 @@
                 </div>
             </template>
         </b-table>
+        <b-form v-if="canEdit && !printView && selectedTableID && selectedRunNr">
+            <div class="form-row row-md-3">
+                <div class="input-group mb-3">
+                    <div class="input-group-prepend">
+                        <button v-on:click="insertRow" class="btn btn-outline-secondary ml-3" type="button">
+                            <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-plus-square" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                                <path fill-rule="evenodd" d="M14 1H2a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2z"/>
+                                <path fill-rule="evenodd" d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <b-input v-bind:class="invalidInsertInput && !rowData.name ? 'is-invalid' : ''" v-model="rowData.name" type="text" class="form-control rounded ml-1" placeholder="Vārds uzvārds" aria-label=""/>
+                    <b-input v-bind:class="invalidInsertInput && !rowData.school ? 'is-invalid' : ''" v-model="rowData.school" type="text" class="form-control rounded ml-1" placeholder="Skola" aria-label=""/>
+                    <b-input v-bind:class="invalidInsertInput && !rowData.birthyear || invalidInsertInput && (rowData.birthyear < 1900 || rowData.birthyear > 2100) ? 'is-invalid' : ''" type="number" min="1900" max="2100" step="1" v-model="rowData.birthyear" class="form-control rounded ml-1" placeholder="Dzimšanas gads" aria-label=""/>
+                    <b-input v-bind:class="invalidInsertInput && !rowData.runNr ? 'is-invalid' : ''" v-model="rowData.runNr" type="number" class="form-control rounded ml-1" placeholder="Skrējiena Nr" aria-label=""/>
+                    <b-input v-bind:class="invalidInsertInput && !rowData.athleteNr ? 'is-invalid' : ''" v-model="rowData.athleteNr" type="number" class="form-control rounded ml-1" placeholder="Sportista Nr" aria-label=""/>
+                    <b-input v-model="rowData.result" type="text" class="form-control rounded ml-1 mr-3" placeholder="Rezultāts" aria-label=""/>
+                </div>
+            </div>
+        </b-form>
+        <div class="d-inline-flex row">
+            <b-pagination
+                    responsive="sm"
+                    v-if="!printView"
+                    v-model="currentPage"
+                    :total-rows="rows"
+                    :per-page="maxPerPage"
+                    aria-controls="my-table"
+                    class="ml-4"
+            ></b-pagination>
+            <b-form-select v-model="maxPerPage" v-if="!printView" class="ml-2 w-auto">
+                <b-form-select-option :value="10">10</b-form-select-option>
+                <b-form-select-option :value=25>25</b-form-select-option>
+                <b-form-select-option :value="100">100</b-form-select-option>
+                <b-form-select-option :value="rows">Visi</b-form-select-option>
+            </b-form-select>
+            <b-button class="ml-2 h-50" v-if="selected.length > 0" v-on:click="deleteTableData">Delete selected!</b-button>
+        </div>
     </div>
 </template>
 
-<style scoped>
-    .tableClass {
-        background: white;
-        height: 100%;
-    }
-</style>
-
 <script>
-    import {userApiRequest} from '@/services/user.service'
+    import userService from '../services/user.service'
     import authService from '../services/auth.service';
-    let tableData = null;
+
     export default {
         data() {
             return {
+                // Search keyword
                 keyword: '',
+                // To disable filtering and sorting while editing rows
+                sortBy: '',
+
+                // Table columns
                 fields: [
-                    {key: 'name'},
-                    {key: 'school'},
-                    {key: 'runNr', sortable: true},
-                    {key: 'athleteNr', sortable: true},
-                    {key: 'result', sortable: true},
+                    {key: 'name', sortable: true, label: 'Vārds uzvārds'},
+                    {key: 'school', sortable: true, label: 'Skola'},
+                    {key: 'birthyear', sortable: true, label: 'Dzim. Gads'},
+                    {key: 'runNr', sortable: true, label: 'Skrējiens'},
+                    {key: 'athleteNr', sortable: true, label: 'Sportists'},
+                    {key: 'result', sortable: true, label: 'Rezultāts'},
                 ],
+                // Current data input on data insertion row
+                rowData: {
+                    'name': '',
+                    'school': '',
+                    'runNr': '',
+                    'birthyear': '',
+                    'athleteNr': '',
+                    'result': ''
+                },
+
+                // Table data
                 data: [],
+
+                // Newly added rows
+                newRows: [],
+
+                // Is table busy dealing with requests
                 isBusy: false,
+
+                // Hide ui for print view
                 printView: false,
+
+                // Can user edit
                 canEdit: false,
+
+                // User has admin permissions
+                isAdmin: false,
+
+                // Selected table and run number
                 selectedTableID: null,
-                selectedRunNr: null
+                selectedRunNr: null,
+
+                // Selected rows for deletion
+                selected: [],
+
+                // Additional beautification of row inputs
+                invalidInsertInput: false,
+
+                // Current table page and max rows per page
+                currentPage: 1,
+                maxPerPage: 10
             };
         },
         beforeMount() {
-
+            // Setup table permissions
             let user = authService.getCurrentUser();
             if (user) {
-                this.canEdit = user.roles.includes('MODERATOR') || user.roles.includes('ADMIN')
-            } else this.canEdit = false;
+                this.isAdmin = authService.getIsAdmin();
+                this.canEdit = authService.getCanEdit();
+                this.fields.unshift({key: 'checked', label: '', sortable: false})
+            }
+
+            // Prevent printing...
+            window.onbeforeprint = function() {
+                if (!authService.getCanEdit()) {
+                    this.window.location.reload()
+                }
+            }
         },
         computed: {
+            // Get number of rows
+            rows() {
+                return this.data.length;
+            },
+            // Filter rows
             getItems() {
                 return this.keyword ? this.data.filter(item =>
-                    item.school.includes(this.keyword) || item.runNr.includes(this.keyword) || item.name.includes(this.keyword)
+                    item.school.toString().toLowerCase().includes(this.keyword.toLowerCase()) || item.runNr.toString().toLowerCase().includes(this.keyword.toLowerCase()) || item.name.toString().toLowerCase().includes(this.keyword.toLowerCase())
                 ) : this.data;
             }
         },
         methods: {
+            toggleSorting() {
+                this.sortBy = '';
+            },
             async getTableData () {
                 this.isBusy = true;
                 try {
-                    const response = await userApiRequest.methods.getTableData(this.selectedRunNr, this.selectedTableID);
+                    const response = await userService.getTableData(this.selectedRunNr, this.selectedTableID);
                     if (response.data.fulfilled)
-                        tableData = response.data.data;
-                        this.data = tableData;
+                        this.data = response.data.data;
                         this.isBusy = false;
-                        this.error = false;
                 } catch(requestException) {
                     console.log(`Request failed with exception ${requestException}`);
                     this.isBusy = false;
-                    this.error = true;
                 }
             },
             async saveTableData() {
-                // Todo: Maybe think of something better than sending the whole table array
                 this.isBusy = true;
                 if (this.data) {
                     try {
-                        const response = await userApiRequest.methods.setTableData(this.data, authService.getToken(), this.selectedTableID);
+                        const response = await userService.setTableData(this.data, authService.getToken(), this.selectedTableID);
                         if (response.data.fulfilled) {
                             console.log(response.data.message);
                             this.isBusy = false;
                             this.error = false;
-                        } else console.log(response.data.message)
+                        } else {
+                            this.data.concat(this.newRows)
+                            console.log(response.data.message)
+                        }
 
                     } catch (requestException) {
-                        console.log(`Request failed with exception ${requestException}`)
+                        console.log(`Request failed with exception ${requestException}`);
+                        this.data.concat(this.newRows)
                         this.isBusy = false;
                         this.error = true;
                     }
                 } else {
+                    this.data.concat(this.newRows)
+                    console.log("Cannot post empty table!")
+                }
+            },
+            async insertTableData(rows) {
+                if (rows) {
+                    await userService.insertTableData(rows, authService.getToken(), this.selectedTableID)
+                        .then(response => {
+                            if (response.status === 200) {
+                                this.updateTable()
+                            }
+                        })
+                        .catch(error => {
+                            console.log(error)
+                        })
+                }
+            },
+            async deleteTableData() {
+                this.isBusy = true;
+                if (this.selected.length > 0) {
+
+                    try {
+                        const response = await userService.deleteTableData(this.selected, authService.getToken(), this.selectedTableID);
+                        if (response.data.fulfilled) {
+                            console.log(response.data.message);
+                            this.isBusy = false;
+                            this.error = false;
+                            this.getTableData();
+
+                            // Set check all button to unchecked
+                            document.getElementById("checkAll").checked = false;
+                        } else console.log(response.data.message)
+
+                    } catch (requestException) {
+                        console.log(`Request failed with exception ${requestException}`);
+                        this.isBusy = false;
+                        this.error = true;
+                    }
+                } else {
+                    this.isBusy = false;
                     console.log("Cannot post empty table!")
                 }
             },
             printTable() {
+                console.log(this.selected);
                 this.printView = true;
                 setTimeout(print, 1);
                 window.onafterprint = function() {
@@ -136,13 +286,31 @@
             },
             updateTable() {
                 if (this.selectedTableID && this.selectedRunNr) {
+                    this.keyword = ''
                     this.getTableData();
                 }
+            },
+            toggleAll(checked) {
+                this.selected = checked ? this.data.map(item => JSON.parse(`{"athleteNr": ${item.athleteNr}, "runNr": ${item.runNr}}`)) : [];
+            },
+            insertRow() {
+                if (this.rowData.athleteNr && this.rowData.school && this.rowData.name && this.rowData.birthyear && this.rowData.runNr) {
+                    // Add a flag to determine if row is newly added
+                    this.insertTableData(this.rowData);
+                    // Reset
+                    this.invalidInsertInput = false;
+                    this.rowData = {};
+                } else this.invalidInsertInput = true;
             }
         }
     };
 </script>
+
 <style scoped>
+    .tableClass {
+        background: white;
+        height: 100%;
+    }
     .tableButtons {
         width: 10%;
         margin-left: 0.5%;

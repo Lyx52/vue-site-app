@@ -1,24 +1,25 @@
 <template>
     <div class="container h-100">
-        <b-form @submit="login" @reset="onReset" class="row h-100 justify-content-center align-items-center">
-                <b-form-group class="loginForm">
+        <b-form @submit.prevent="" @submit="login" @reset="onReset" class="row h-100 justify-content-center align-items-center">
+                <b-form-group class="loginForm mobileStyle">
                     <b-form-input
-                            class="formInputs"
-                            id="input-1"
+                            class="formInputs w-auto"
                             v-model="username"
                             type="text"
                             required
                             placeholder="Username"
                     ></b-form-input>
                     <b-form-input
-                            class="formInputs"
-                            id="input-2"
+                            class="formInputs w-auto"
                             v-model="password"
                             type="password"
                             required
                             placeholder="Password"
                     ></b-form-input>
-                    <b-button class="formInputs" type="submit" variant="primary">Login</b-button>
+                    <div v-if="error" class="alert alert-danger ml-2 w-100" role="alert">
+                        Nepareizi pieslēgšanās dati!
+                    </div>
+                    <b-button class="formInputs" type="submit" variant="primary">Pieslēgties</b-button>
                 </b-form-group>
         </b-form>
     </div>
@@ -37,11 +38,11 @@
         methods: {
             async login() {
                 // Logging in
-                await authService.login(this.username, this.password, loggedIn => {
+                await authService.login(this.username, this.password, (loggedIn, error) => {
                     if (!loggedIn) {
-                        // Not logged in
                         this.error = true;
-                        this.$router.replace(this.$route.query.redirect || '/login')
+                        console.log(error);
+                        this.onReset();
                     } else {
                         //Login
                         this.$router.replace(this.$route.query.redirect || '/')
@@ -67,5 +68,8 @@
     }
     .formInputs {
         margin: 2.5%;
+    }
+    @media screen and (max-width: 321px) {
+        .mobileStyle {margin-right:40%;}
     }
 </style>
