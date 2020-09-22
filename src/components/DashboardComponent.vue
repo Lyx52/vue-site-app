@@ -146,18 +146,19 @@
                 })
             },
             createSchool() {
-                console.log(`Creating school ${this.schoolName}`)
+                console.log(`Creating school ${this.schoolName}`);
                 if (this.schoolName) {
-                    console.log(`Creating school ${this.schoolName}`)
+                    console.log(`Creating school ${this.schoolName}`);
                     userService.insertSchoolName(this.schoolName, authService.getToken())
                         .then(response => {
-                            console.log(`RESPONSE: ${response}`)
+                            console.log(`RESPONSE: ${response}`);
                             this.getSchools()
                         })
                         .catch(error => {
                             console.log(`ERROR: ${error}`)
                         })
                 }
+                this.schoolName = '';
             },
             deleteSchools() {
                 if (this.selected) {

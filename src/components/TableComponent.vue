@@ -30,7 +30,7 @@
                 <b-form-select-option v-for="index in 10" :key="index" :value="index">{{ index }} Skrējiens</b-form-select-option>
             </b-form-select>
         </form>
-        <b-table striped hover class="container-fluid" :items="getItems" :busy="isBusy" :fields="fields" :per-page="maxPerPage" :current-page="currentPage" :sort-by.sync="sortBy" responsive="sm">
+        <b-table striped hover class="container-fluid" @sort-changed="sortingChanged" :no-sort-reset="true" :no-local-sorting="true" :items="getItems" :busy="isBusy" :fields="fields" :per-page="maxPerPage" :current-page="currentPage" responsive="sm">
             <!--Table input-->
             <template v-if="canEdit && isAdmin && !printView" v-slot:cell(checked)="row">
                 <b-form-checkbox-group>
@@ -117,8 +117,6 @@
             return {
                 // Search keyword
                 keyword: '',
-                // To disable filtering and sorting while editing rows
-                sortBy: '',
                 // Table columns
                 fields: [
                     {key: 'name', sortable: true, label: 'Vārds uzvārds'},
@@ -203,16 +201,31 @@
             // Filter rows
             getItems() {
                 return this.keyword ? this.data.filter(item =>
-                    this.filterSchools(item, this.keyword) || item.runNr.toString().toLowerCase().includes(this.keyword.toLowerCase()) || item.name.toString().toLowerCase().includes(this.keyword.toLowerCase())
+                    this.filterSchools(item, this.keyword.toLowerCase()) || item.runNr.toString().toLowerCase().includes(this.keyword.toLowerCase()) || item.name.toString().toLowerCase().includes(this.keyword.toLowerCase())
                 ) : this.data;
             }
         },
         methods: {
+            sortingChanged(ctx) {
+                this.data = this.data.sort((a, b) => {
+                  let sortByA = a[ctx.sortBy];
+                  let sortByB = b[ctx.sortBy];
+
+                  if (sortByA < sortByB) {
+                      return ctx.sortDesc ? 1 : -1;
+                  }
+                  if (sortByA > sortByB) {
+                      return ctx.sortDesc ? -1 : 1;
+                  }
+
+                  // fields must be equal
+                  return 0;
+                });
+            },
             filterSchools(item, keyword) {
                 if (item) {
                     // Filter schools by row's school column
                     let _school = this.schoolNames.filter(school => school.SchoolID === item.school)[0];
-
                     // If school has been found, then check if it includes keyword else return false
                     return _school ? _school.SchoolName.toString().toLowerCase().includes(keyword) : false;
                 } else return false;
@@ -275,7 +288,7 @@
                             this.isBusy = false;
                             this.error = false;
                         } else {
-                            this.data.concat(this.newRows)
+                            this.data.concat(this.newRows);
                             console.log(response.data.message)
                         }
 
