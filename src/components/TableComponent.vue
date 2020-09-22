@@ -14,7 +14,7 @@
             <b-button v-if="canEdit && !printView" v-on:click="printTable()" class="tableButtons w-auto">Printēt tabulu</b-button>
 
             <!--Search fields-->
-            <b-form-input v-model="keyword" placeholder="Meklēt..." class="tableSearch ml-2"></b-form-input>
+            <b-input v-on:keydown.enter.prevent=""  v-model="keyword" placeholder="Meklēt..." class="tableSearch ml-2"></b-input>
 
             <!--Select table-->
             <b-form-select v-model="selectedTableID" class="ml-2 col-auto" v-on:change="updateTable">
@@ -38,22 +38,25 @@
                 </b-form-checkbox-group>
             </template>
             <template v-if="canEdit && !printView" v-slot:cell(name)="row">
-                <b-form-input v-model="row.item.name" v-on:click="toggleSorting"/>
+                <b-form-input v-model="row.item.name"/>
             </template>
             <template v-if="canEdit && !printView" v-slot:cell(school)="row">
-                <b-form-input v-model="row.item.school" v-on:click="toggleSorting"/>
+<!--                <b-form-input v-model="row.item.school"/>-->
+                <b-form-select v-model="row.item.school">
+                    <b-form-select-option v-for="school in schoolNames" :key="school.SchoolID" :value="school.SchoolID">{{school.SchoolName}}</b-form-select-option>
+                </b-form-select>
             </template>
             <template v-if="canEdit && !printView" v-slot:cell(birthyear)="row">
-                <b-form-input type="number" min="1900" max="2100" step="1" v-model="row.item.birthyear" v-on:click="toggleSorting"/>
+                <b-form-input type="number" min="1900" max="2100" step="1" v-model="row.item.birthyear"/>
             </template>
             <template v-if="canEdit && !printView" v-slot:cell(runNr)="row">
-                <b-form-input type="number" v-model="row.item.runNr" v-on:click="toggleSorting"/>
+                <b-form-input type="number" v-model="row.item.runNr"/>
             </template>
             <template v-if="canEdit && !printView" v-slot:cell(athleteNr)="row">
-                <b-form-input type="number" v-model="row.item.athleteNr" v-on:click="toggleSorting"/>
+                <b-form-input type="number" v-model="row.item.athleteNr"/>
             </template>
             <template v-if="canEdit && !printView" v-slot:cell(result)="row">
-                <b-form-input type="number" v-model="row.item.result" v-on:click="toggleSorting"/>
+                <b-form-input type="text" v-model="row.item.result" maxlength="8" @input="formatResultTime(row.index)"/>
             </template>
             <!--Table busy animation-->
             <template v-slot:table-busy>
@@ -107,6 +110,7 @@
 <script>
     import userService from '../services/user.service'
     import authService from '../services/auth.service';
+    import dateTime from 'date-and-time';
 
     export default {
         data() {
@@ -115,15 +119,22 @@
                 keyword: '',
                 // To disable filtering and sorting while editing rows
                 sortBy: '',
-
                 // Table columns
                 fields: [
                     {key: 'name', sortable: true, label: 'Vārds uzvārds'},
-                    {key: 'school', sortable: true, label: 'Skola'},
+                    {key: 'school', sortable: true, label: 'Skola',
+                        formatter: (value) => {
+                            // Filter schoolID in school list
+                            let school = this.schoolNames.filter(item => item.SchoolID === value)[0];
+
+                            // If school has been found return school name otherwise return empty
+                            return school ? school.SchoolName : '';
+                        }
+                    },
                     {key: 'birthyear', sortable: true, label: 'Dzim. Gads'},
                     {key: 'runNr', sortable: true, label: 'Skrējiens'},
                     {key: 'athleteNr', sortable: true, label: 'Sportists'},
-                    {key: 'result', sortable: true, label: 'Rezultāts'},
+                    {key: 'result', sortable: true, label: 'Rezultāts'}
                 ],
                 // Current data input on data insertion row
                 rowData: {
@@ -137,9 +148,6 @@
 
                 // Table data
                 data: [],
-
-                // Newly added rows
-                newRows: [],
 
                 // Is table busy dealing with requests
                 isBusy: false,
@@ -165,7 +173,10 @@
 
                 // Current table page and max rows per page
                 currentPage: 1,
-                maxPerPage: 10
+                maxPerPage: 10,
+
+                // Array of school names for combobox
+                schoolNames: []
             };
         },
         beforeMount() {
@@ -192,25 +203,67 @@
             // Filter rows
             getItems() {
                 return this.keyword ? this.data.filter(item =>
-                    item.school.toString().toLowerCase().includes(this.keyword.toLowerCase()) || item.runNr.toString().toLowerCase().includes(this.keyword.toLowerCase()) || item.name.toString().toLowerCase().includes(this.keyword.toLowerCase())
+                    this.filterSchools(item, this.keyword) || item.runNr.toString().toLowerCase().includes(this.keyword.toLowerCase()) || item.name.toString().toLowerCase().includes(this.keyword.toLowerCase())
                 ) : this.data;
             }
         },
         methods: {
-            toggleSorting() {
-                this.sortBy = '';
+            filterSchools(item, keyword) {
+                if (item) {
+                    // Filter schools by row's school column
+                    let _school = this.schoolNames.filter(school => school.SchoolID === item.school)[0];
+
+                    // If school has been found, then check if it includes keyword else return false
+                    return _school ? _school.SchoolName.toString().toLowerCase().includes(keyword) : false;
+                } else return false;
+            },
+            formatResultTime(index) {
+                // Get length of input string
+                let len = this.data[index].result.length;
+
+                // If length of it is 2 or 5 then add semicolon
+                if (len === 2 || len === 5) {
+                    this.data[index].result += ':';
+                }
             },
             async getTableData () {
                 this.isBusy = true;
                 try {
                     const response = await userService.getTableData(this.selectedRunNr, this.selectedTableID);
-                    if (response.data.fulfilled)
-                        this.data = response.data.data;
-                        this.isBusy = false;
+                    if (response.data.fulfilled) {
+                        this.data = this.formatTableData(response.data.data);
+                        this.getSchools();
+                    }
                 } catch(requestException) {
                     console.log(`Request failed with exception ${requestException}`);
                     this.isBusy = false;
                 }
+            },
+            async getSchools() {
+                this.isBusy = true;
+                await userService.getSchools()
+                    .then(response => {
+                        if (response.data)
+                            this.schoolNames = response.data[0];
+                        this.isBusy = false;
+                    })
+                    .catch(error => {
+                        console.log(error);
+                        this.isBusy = false;
+                    })
+            },
+            formatTableData(tableData) {
+                // parse result to time
+                let _tableData = tableData.map(item => {
+                    item.result = item.result ? this.formatTime(item.result.toString()) : '';
+                    return item;
+                });
+                return _tableData;
+            },
+            formatTime(timeString) {
+                //console.log(dateTime.subtract(dateTime.parse(timeString, "m:s:SSS"), dateTime.parse("0:0:000", "m:s:SSS")).toMilliseconds());
+                return dateTime.format(dateTime.parse(timeString, "m:s:SSS"), "mm:ss:SSS");
+
             },
             async saveTableData() {
                 this.isBusy = true;
@@ -228,12 +281,10 @@
 
                     } catch (requestException) {
                         console.log(`Request failed with exception ${requestException}`);
-                        this.data.concat(this.newRows)
                         this.isBusy = false;
                         this.error = true;
                     }
                 } else {
-                    this.data.concat(this.newRows)
                     console.log("Cannot post empty table!")
                 }
             },
@@ -286,7 +337,7 @@
             },
             updateTable() {
                 if (this.selectedTableID && this.selectedRunNr) {
-                    this.keyword = ''
+                    this.keyword = '';
                     this.getTableData();
                 }
             },

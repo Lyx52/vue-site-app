@@ -25,5 +25,18 @@ export default {
             'tableID': tableID.toString(),
             'rowData': rowData
         }, {headers: {'x-access-token': token}})
+    },
+    insertSchoolName(schoolName, token) {
+        return axios.post(config.getRoute('createSchool'), {
+            'schoolName': schoolName
+        }, {headers: {'x-access-token': token}})
+    },
+    getSchools() {
+        return axios.get(config.getRoute('getSchools'))
+    },
+    deleteSchools(schools, token) {
+        return axios.post(config.getRoute('deleteSchools'), {
+            'schools': schools
+        }, {headers: {'x-access-token': token}})
     }
 };

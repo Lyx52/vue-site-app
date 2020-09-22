@@ -20,9 +20,10 @@ export default {
             })
     },
     async register(username, password, roles, callback) {
+        let hashedPassword = crypto.createHmac('sha256', password).digest('hex');
         await Axios.post(config.getRoute('register'), {
             username: username,
-            password: password,
+            password: hashedPassword,
             roles: roles
         }, {headers: {'x-access-token': this.getToken()}})
             .then(response => {

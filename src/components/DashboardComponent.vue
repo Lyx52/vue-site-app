@@ -4,7 +4,7 @@
             <b-card no-body>
                 <b-tabs pills card>
                     <b-tab title="Lietotāja info" active>
-                        <b-card-body>
+                            <b-card-body>
                             <!--username-->
                             <div class="row">
                                 <label>Lietotājvārds: <b><em>{{userData.username}}</em></b></label>
@@ -40,6 +40,32 @@
                             </b-form>
                         </b-card-body>
                     </b-tab>
+                    <b-tab title="Skolu izveide/dzēšana" v-on:click="getSchools">
+                        <b-card-body>
+                            <b-form @submit.prevent="" @submit="createSchool" @reset="schoolName = ''" class="row">
+                                <b-button class="col mr-2" type="submit" variant="primary">Pievienot skolu</b-button>
+                                <b-form-input maxlength="150" class="col-10 mr-2" v-model="schoolName" placeholder="Skolas nosaukums..." required/>
+                            </b-form>
+                            <div class="row mt-3">
+                                <b-button @click="getSchools" variant="Info" class="col">
+                                    <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-arrow-clockwise" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                                        <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/>
+                                        <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/>
+                                    </svg>
+                                </b-button>
+                                <b-table striped hover class="container-fluid" :items="schoolNameTable" :busy="isBusy" :fields="fields" responsive="sm">
+                                    <template v-if="isAdmin" v-slot:cell(checked)="row">
+                                        <b-form-checkbox-group>
+                                            <b-form-checkbox v-model="selected" :value="{'SchoolID': row.item.SchoolID, 'SchoolName': row.item.SchoolName}" class="w-auto mt-2 ml-1 mr-auto"/>
+                                        </b-form-checkbox-group>
+                                    </template>
+                                </b-table>
+                                <div class="row-2">
+                                    <b-button @click="deleteSchools" variant="danger" v-if="selected.length > 0">Dzēst skolas</b-button>
+                                </div>
+                            </div>
+                        </b-card-body>
+                    </b-tab>
                 </b-tabs>
             </b-card>
         </div>
@@ -47,10 +73,14 @@
 </template>
 <script>
     import authService from '../services/auth.service'
-
+    import userService from '../services/user.service'
     export default {
         data() {
             return {
+                fields: [
+                    {key: 'SchoolID', sortable: true, label: 'Skolas ID'},
+                    {key: 'SchoolName', sortable: true, label: 'Skolas nosaukums'},
+                ],
                 userData: authService.getCurrentUser(),
                 isAdmin: authService.getIsAdmin,
                 showCode: false,
@@ -60,8 +90,15 @@
                 username: '',
                 password: '',
                 availableRoles: ["USER", "MODERATOR", "ADMIN"],
-                selectedRoles: []
+                selectedRoles: [],
+                schoolName: '',
+                isBusy: false,
+                schoolNameTable: [],
+                selected: []
             }
+        },
+        beforeMount() {
+            this.fields.unshift({key: 'checked', label: '', sortable: false})
         },
         methods: {
             toggleShowCode() {
@@ -94,6 +131,46 @@
                 this.username = '';
                 this.password = '';
             },
+            getSchools() {
+                this.isBusy = true;
+                userService.getSchools()
+                .then(response => {
+                    console.log(response);
+                    if (response.data)
+                        this.schoolNameTable = response.data[0];
+                    this.isBusy = false;
+                })
+                .catch(error => {
+                    console.log(error);
+                    this.isBusy = false;
+                })
+            },
+            createSchool() {
+                console.log(`Creating school ${this.schoolName}`)
+                if (this.schoolName) {
+                    console.log(`Creating school ${this.schoolName}`)
+                    userService.insertSchoolName(this.schoolName, authService.getToken())
+                        .then(response => {
+                            console.log(`RESPONSE: ${response}`)
+                            this.getSchools()
+                        })
+                        .catch(error => {
+                            console.log(`ERROR: ${error}`)
+                        })
+                }
+            },
+            deleteSchools() {
+                if (this.selected) {
+                    userService.deleteSchools(this.selected, authService.getToken())
+                        .then(response => {
+                            console.log(`RESPONSE: ${response}`);
+                            this.getSchools();
+                        })
+                        .catch(error => {
+                            console.log(`ERROR: ${error}`)
+                        })
+                }
+            }
         }
     }
 </script>
