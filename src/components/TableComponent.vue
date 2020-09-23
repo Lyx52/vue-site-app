@@ -268,15 +268,15 @@
             formatTableData(tableData) {
                 // parse result to time
                 let _tableData = tableData.map(item => {
+                    if (item.SchoolID === 9)
+                        console.log(item.result);
                     item.result = item.result ? this.formatTime(item.result.toString()) : '';
                     return item;
                 });
                 return _tableData;
             },
             formatTime(timeString) {
-                //console.log(dateTime.subtract(dateTime.parse(timeString, "m:s:SSS"), dateTime.parse("0:0:000", "m:s:SSS")).toMilliseconds());
                 return dateTime.format(dateTime.parse(timeString, "m:s:SSS"), "mm:ss:SSS");
-
             },
             async saveTableData() {
                 this.isBusy = true;
@@ -288,7 +288,6 @@
                             this.isBusy = false;
                             this.error = false;
                         } else {
-                            this.data.concat(this.newRows);
                             console.log(response.data.message)
                         }
 

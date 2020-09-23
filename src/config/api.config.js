@@ -10,7 +10,8 @@ module.exports = {
     'insertTableRow': '/api/insert/table',
     'createSchool': '/api/insert/school',
     'getSchools': '/api/get/school',
-    'deleteSchools': '/api/delete/school'
+    'deleteSchools': '/api/delete/school',
+    'getTotalResults': '/api/get/results'
   },
   getRoute(route) {
     return this.API_URL + this.API_ROUTES[route]

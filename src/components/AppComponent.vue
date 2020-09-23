@@ -8,6 +8,7 @@
 
                 <b-collapse id="nav-collapse" is-nav>
                     <b-navbar-nav class="ml-auto">
+                        <b-nav-item to="/calc">Kopējais Aprēķins DEV</b-nav-item>
                         <b-nav-item to="/about" disabled>Par mājaslapu</b-nav-item>
                         <b-nav-item-dropdown right v-if="loggedIn">
                             <template v-slot:button-content>

@@ -6,9 +6,10 @@ import About from '../components/AboutComponent';
 import Login from '../components/LoginComponent';
 import Table from '../components/TableComponent';
 import authService from "./auth.service";
+import ResultsComponent from "@/components/ResultsComponent";
 
 Vue.use(Router);
-const publicPages = ['/login', '/about', '/'];
+const publicPages = ['/login', '/about', '/', '/calc'];
 
 export const router = new Router({
     mode: 'history',
@@ -17,6 +18,7 @@ export const router = new Router({
         {path: '/login', component: Login},
         {path: '/dashboard', component: Dashboard},
         {path: '/about', component: About},
+        {path: '/calc', component: ResultsComponent},
         {path: '/logout',
             beforeEnter (to, from, next) {
                 authService.logout(); //Log out

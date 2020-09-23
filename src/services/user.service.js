@@ -38,5 +38,8 @@ export default {
         return axios.post(config.getRoute('deleteSchools'), {
             'schools': schools
         }, {headers: {'x-access-token': token}})
-    }
+    },
+    getSchoolResults(token) {
+        return axios.get(config.getRoute('getTotalResults'), {headers: {'x-access-token': token}})
+    },
 };
