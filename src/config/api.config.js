@@ -1,5 +1,5 @@
 module.exports = {
-  'API_URL': 'http://localhost:8080',
+  'API_URL': "http://localhost:8080",
   //'API_URL': 'http://192.168.43.43:8080',
   'API_ROUTES': {
     'login': '/api/auth/login',
@@ -9,8 +9,8 @@ module.exports = {
     'deleteTableRows': '/api/delete/table',
     'insertTableRow': '/api/insert/table',
     'createSchool': '/api/insert/school',
-    'getSchools': '/api/get/school',
-    'deleteSchools': '/api/delete/school',
+    'getSchools': '/api/get/schools',
+    'deleteSchools': '/api/delete/schools',
     'getTotalResults': '/api/get/results'
   },
   getRoute(route) {

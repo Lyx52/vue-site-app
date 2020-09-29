@@ -8,16 +8,14 @@ export default {
             'runNr': runNr
         })
     },
-    setTableData(changedData, token, tableID) {
+    setTableData(tableData, token) {
         return axios.post(config.getRoute('updateTable'), {
-            'tableID': tableID.toString(),
-            'changedData': changedData
+            'tableData': tableData
         }, {headers: {'x-access-token': token}})
     },
-    deleteTableData(deleteData, token, tableID) {
+    deleteTableData(rows, token) {
         return axios.post(config.getRoute('deleteTableRows'), {
-            'tableID': tableID.toString(),
-            'deleteData': deleteData
+            'rows': rows
         }, {headers: {'x-access-token': token}})
     },
     insertTableData(rowData, token, tableID) {
@@ -39,7 +37,9 @@ export default {
             'schools': schools
         }, {headers: {'x-access-token': token}})
     },
-    getSchoolResults(token) {
-        return axios.get(config.getRoute('getTotalResults'), {headers: {'x-access-token': token}})
+    getSchoolResults(tableID) {
+        return axios.post(config.getRoute('getTotalResults'), {
+            'tableID': tableID
+        })
     },
 };

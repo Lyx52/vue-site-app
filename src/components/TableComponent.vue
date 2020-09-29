@@ -10,8 +10,14 @@
         <form v-if="!printView" class="form-inline mt-1 mb-1">
             <!--Save/Print table-->
             <b-form-checkbox id="checkAll" class="ml-3 w-20" v-if="canEdit && !printView" v-on:change="toggleAll"/>
-            <b-button v-on:click="saveTableData()" class="tableButtons w-auto" v-if="canEdit">Saglabāt tabulu</b-button>
-            <b-button v-if="canEdit && !printView" v-on:click="printTable()" class="tableButtons w-auto">Printēt tabulu</b-button>
+            <b-button v-on:click="saveTableData()" class="tableButtons w-auto" v-if="canEdit" variant="primary">Saglabāt tabulu</b-button>
+            <b-button v-if="canEdit && !printView" v-on:click="printTable()" class="tableButtons w-auto">
+                <svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-printer" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M11 2H5a1 1 0 0 0-1 1v2H3V3a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2h-1V3a1 1 0 0 0-1-1zm3 4H2a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1h1v1H2a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2h-1v-1h1a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1z"/>
+                    <path fill-rule="evenodd" d="M11 9H5a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-3a1 1 0 0 0-1-1zM5 8a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H5z"/>
+                    <path d="M3 7.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0z"/>
+                </svg>
+            </b-button>
 
             <!--Search fields-->
             <b-input v-on:keydown.enter.prevent=""  v-model="keyword" placeholder="Meklēt..." class="tableSearch ml-2"></b-input>
@@ -30,24 +36,23 @@
                 <b-form-select-option v-for="index in 10" :key="index" :value="index">{{ index }} Skrējiens</b-form-select-option>
             </b-form-select>
         </form>
-        <b-table striped hover class="container-fluid" @sort-changed="sortingChanged" :no-sort-reset="true" :no-local-sorting="true" :items="getItems" :busy="isBusy" :fields="fields" :per-page="maxPerPage" :current-page="currentPage" responsive="sm">
+        <b-table striped hover class="container-fluid" @sort-changed="sortingChanged" :no-sort-reset="true" :no-local-sorting="true" :items="getItems()" :busy="isBusy" :fields="fields" :per-page="maxPerPage" :current-page="currentPage" responsive="sm">
             <!--Table input-->
             <template v-if="canEdit && isAdmin && !printView" v-slot:cell(checked)="row">
                 <b-form-checkbox-group>
-                    <b-form-checkbox v-model="selected" :value="{'athleteNr': row.item.athleteNr, 'runNr': row.item.runNr}" class="w-auto mt-2 ml-1 mr-auto"/>
+                    <b-form-checkbox v-model="selected" :value="row.item.id" class="w-auto mt-2 ml-1 mr-auto"/>
                 </b-form-checkbox-group>
             </template>
             <template v-if="canEdit && !printView" v-slot:cell(name)="row">
                 <b-form-input v-model="row.item.name"/>
             </template>
-            <template v-if="canEdit && !printView" v-slot:cell(school)="row">
-<!--                <b-form-input v-model="row.item.school"/>-->
-                <b-form-select v-model="row.item.school">
-                    <b-form-select-option v-for="school in schoolNames" :key="school.SchoolID" :value="school.SchoolID">{{school.SchoolName}}</b-form-select-option>
+            <template v-if="canEdit && !printView" v-slot:cell(schoolID)="row">
+                <b-form-select v-model="row.item.schoolID">
+                    <b-form-select-option v-for="school in schoolNames" :key="school.schoolID" :value="school.schoolID">{{school.name}}</b-form-select-option>
                 </b-form-select>
             </template>
-            <template v-if="canEdit && !printView" v-slot:cell(birthyear)="row">
-                <b-form-input type="number" min="1900" max="2100" step="1" v-model="row.item.birthyear"/>
+            <template v-if="canEdit && !printView" v-slot:cell(year)="row">
+                <b-form-input type="number" min="1900" max="2100" step="1" v-model="row.item.year"/>
             </template>
             <template v-if="canEdit && !printView" v-slot:cell(runNr)="row">
                 <b-form-input type="number" v-model="row.item.runNr"/>
@@ -56,7 +61,8 @@
                 <b-form-input type="number" v-model="row.item.athleteNr"/>
             </template>
             <template v-if="canEdit && !printView" v-slot:cell(result)="row">
-                <b-form-input type="text" v-model="row.item.result" maxlength="8" @input="formatResultTime(row.index)"/>
+<!--                <b-form-input type="text" v-model="row.item.result" maxlength="8" @input="formatResultTime(row.index)"/>-->
+                <the-mask type="text" :masked="true" class="form-control rounded" v-model="row.item.result" mask="##:##.##"/>
             </template>
             <!--Table busy animation-->
             <template v-slot:table-busy>
@@ -78,11 +84,13 @@
                         </button>
                     </div>
                     <b-input v-bind:class="invalidInsertInput && !rowData.name ? 'is-invalid' : ''" v-model="rowData.name" type="text" class="form-control rounded ml-1" placeholder="Vārds uzvārds" aria-label=""/>
-                    <b-input v-bind:class="invalidInsertInput && !rowData.school ? 'is-invalid' : ''" v-model="rowData.school" type="text" class="form-control rounded ml-1" placeholder="Skola" aria-label=""/>
-                    <b-input v-bind:class="invalidInsertInput && !rowData.birthyear || invalidInsertInput && (rowData.birthyear < 1900 || rowData.birthyear > 2100) ? 'is-invalid' : ''" type="number" min="1900" max="2100" step="1" v-model="rowData.birthyear" class="form-control rounded ml-1" placeholder="Dzimšanas gads" aria-label=""/>
+                    <b-form-select v-model="rowData.schoolID">
+                        <b-form-select-option v-bind:class="invalidInsertInput && !rowData.schoolID ? 'is-invalid' : ''" v-for="school in schoolNames" :key="school.schoolID" :value="school.schoolID">{{school.name}}</b-form-select-option>
+                    </b-form-select>
+                    <b-input v-bind:class="invalidInsertInput && !rowData.year || invalidInsertInput && (rowData.year < 1900 || rowData.year > 2100) ? 'is-invalid' : ''" type="number" min="1900" max="2100" step="1" v-model="rowData.year" class="form-control rounded ml-1" placeholder="Dzimšanas gads" aria-label=""/>
                     <b-input v-bind:class="invalidInsertInput && !rowData.runNr ? 'is-invalid' : ''" v-model="rowData.runNr" type="number" class="form-control rounded ml-1" placeholder="Skrējiena Nr" aria-label=""/>
                     <b-input v-bind:class="invalidInsertInput && !rowData.athleteNr ? 'is-invalid' : ''" v-model="rowData.athleteNr" type="number" class="form-control rounded ml-1" placeholder="Sportista Nr" aria-label=""/>
-                    <b-input v-model="rowData.result" type="text" class="form-control rounded ml-1 mr-3" placeholder="Rezultāts" aria-label=""/>
+                    <the-mask type="text" :masked="true" class="form-control rounded ml-1 mr-3" v-model="rowData.result" mask="##:##.##" placeholder="Rezultāts"/>
                 </div>
             </div>
         </b-form>
@@ -108,11 +116,11 @@
 </template>
 
 <script>
-    import userService from '../services/user.service'
-    import authService from '../services/auth.service';
-    import dateTime from 'date-and-time';
+import userService from '../services/user.service'
+import authService from '../services/auth.service';
+import utils from "../utils/utils";
 
-    export default {
+export default {
         data() {
             return {
                 // Search keyword
@@ -120,16 +128,15 @@
                 // Table columns
                 fields: [
                     {key: 'name', sortable: true, label: 'Vārds uzvārds'},
-                    {key: 'school', sortable: true, label: 'Skola',
+                    {key: 'schoolID', sortable: true, label: 'Skola',
                         formatter: (value) => {
                             // Filter schoolID in school list
-                            let school = this.schoolNames.filter(item => item.SchoolID === value)[0];
-
+                            let school = this.schoolNames.filter(item => item.schoolID === value)[0];
                             // If school has been found return school name otherwise return empty
-                            return school ? school.SchoolName : '';
+                            return school ? school.name : '';
                         }
                     },
-                    {key: 'birthyear', sortable: true, label: 'Dzim. Gads'},
+                    {key: 'year', sortable: true, label: 'Dzim. Gads'},
                     {key: 'runNr', sortable: true, label: 'Skrējiens'},
                     {key: 'athleteNr', sortable: true, label: 'Sportists'},
                     {key: 'result', sortable: true, label: 'Rezultāts'}
@@ -137,9 +144,9 @@
                 // Current data input on data insertion row
                 rowData: {
                     'name': '',
-                    'school': '',
+                    'schoolID': '',
                     'runNr': '',
-                    'birthyear': '',
+                    'year': '',
                     'athleteNr': '',
                     'result': ''
                 },
@@ -185,7 +192,6 @@
                 this.canEdit = authService.getCanEdit();
                 this.fields.unshift({key: 'checked', label: '', sortable: false})
             }
-
             // Prevent printing...
             window.onbeforeprint = function() {
                 if (!authService.getCanEdit()) {
@@ -197,147 +203,53 @@
             // Get number of rows
             rows() {
                 return this.data.length;
-            },
-            // Filter rows
-            getItems() {
-                return this.keyword ? this.data.filter(item =>
-                    this.filterSchools(item, this.keyword.toLowerCase()) || item.runNr.toString().toLowerCase().includes(this.keyword.toLowerCase()) || item.name.toString().toLowerCase().includes(this.keyword.toLowerCase())
-                ) : this.data;
             }
         },
         methods: {
-            sortingChanged(ctx) {
-                this.data = this.data.sort((a, b) => {
-                  let sortByA = a[ctx.sortBy];
-                  let sortByB = b[ctx.sortBy];
-
-                  if (sortByA < sortByB) {
-                      return ctx.sortDesc ? 1 : -1;
-                  }
-                  if (sortByA > sortByB) {
-                      return ctx.sortDesc ? -1 : 1;
-                  }
-
-                  // fields must be equal
-                  return 0;
-                });
-            },
-            filterSchools(item, keyword) {
-                if (item) {
-                    // Filter schools by row's school column
-                    let _school = this.schoolNames.filter(school => school.SchoolID === item.school)[0];
-                    // If school has been found, then check if it includes keyword else return false
-                    return _school ? _school.SchoolName.toString().toLowerCase().includes(keyword) : false;
-                } else return false;
-            },
-            formatResultTime(index) {
-                // Get length of input string
-                let len = this.data[index].result.length;
-
-                // If length of it is 2 or 5 then add semicolon
-                if (len === 2 || len === 5) {
-                    this.data[index].result += ':';
-                }
-            },
-            async getTableData () {
-                this.isBusy = true;
-                try {
-                    const response = await userService.getTableData(this.selectedRunNr, this.selectedTableID);
-                    if (response.data.fulfilled) {
-                        this.data = this.formatTableData(response.data.data);
-                        this.getSchools();
-                    }
-                } catch(requestException) {
-                    console.log(`Request failed with exception ${requestException}`);
-                    this.isBusy = false;
-                }
-            },
-            async getSchools() {
-                this.isBusy = true;
-                await userService.getSchools()
-                    .then(response => {
-                        if (response.data)
-                            this.schoolNames = response.data[0];
-                        this.isBusy = false;
-                    })
-                    .catch(error => {
-                        console.log(error);
-                        this.isBusy = false;
-                    })
-            },
-            formatTableData(tableData) {
+            formatTableData(tableData, forSaving) {
                 // parse result to time
-                let _tableData = tableData.map(item => {
-                    if (item.SchoolID === 9)
-                        console.log(item.result);
-                    item.result = item.result ? this.formatTime(item.result.toString()) : '';
-                    return item;
+                return tableData.map(item => {
+                  this.formatTableRow(item, forSaving)
+                  return item;
                 });
-                return _tableData;
             },
-            formatTime(timeString) {
-                return dateTime.format(dateTime.parse(timeString, "m:s:SSS"), "mm:ss:SSS");
+            formatTableRow(row, forSaving) {
+                row.result = forSaving ? utils.toMilliseconds(row.result) : utils.fromMilliseconds(parseInt(row.result));
+                row.runNr = forSaving && isNaN(row.runNr) ? 1 : row.runNr;
+                return row;
             },
             async saveTableData() {
                 this.isBusy = true;
                 if (this.data) {
-                    try {
-                        const response = await userService.setTableData(this.data, authService.getToken(), this.selectedTableID);
-                        if (response.data.fulfilled) {
-                            console.log(response.data.message);
-                            this.isBusy = false;
-                            this.error = false;
-                        } else {
-                            console.log(response.data.message)
-                        }
-
-                    } catch (requestException) {
-                        console.log(`Request failed with exception ${requestException}`);
-                        this.isBusy = false;
-                        this.error = true;
-                    }
-                } else {
-                    console.log("Cannot post empty table!")
-                }
-            },
-            async insertTableData(rows) {
-                if (rows) {
-                    await userService.insertTableData(rows, authService.getToken(), this.selectedTableID)
-                        .then(response => {
-                            if (response.status === 200) {
-                                this.updateTable()
-                            }
-                        })
-                        .catch(error => {
-                            console.log(error)
-                        })
-                }
+                    await userService.setTableData(this.formatTableData(this.data, true), authService.getToken())
+                      .then(response => {
+                          console.log(`RESPONSE: ${response.data.message}`)
+                          this.data = this.formatTableData(this.data, false)
+                          this.isBusy = false;
+                      })
+                      .catch(err => {
+                          console.log(err)
+                          this.isBusy = false;
+                      })
+                    this.isBusy = false;
+                } else this.isBusy = false;
             },
             async deleteTableData() {
                 this.isBusy = true;
                 if (this.selected.length > 0) {
-
-                    try {
-                        const response = await userService.deleteTableData(this.selected, authService.getToken(), this.selectedTableID);
-                        if (response.data.fulfilled) {
-                            console.log(response.data.message);
-                            this.isBusy = false;
-                            this.error = false;
-                            this.getTableData();
-
-                            // Set check all button to unchecked
-                            document.getElementById("checkAll").checked = false;
-                        } else console.log(response.data.message)
-
-                    } catch (requestException) {
-                        console.log(`Request failed with exception ${requestException}`);
+                  await userService.deleteTableData(this.selected, authService.getToken())
+                    .then(response => {
+                        if (response.data.fulfilled)
+                          document.getElementById("checkAll").checked = false;
+                        console.log(`RESPONSE: ${response.data.message}`)
                         this.isBusy = false;
-                        this.error = true;
-                    }
-                } else {
-                    this.isBusy = false;
-                    console.log("Cannot post empty table!")
-                }
+                        this.getTableData();
+                    })
+                    .catch(err => {
+                        console.log(`ERROR: ${err.data.message}`)
+                        this.isBusy = false;
+                    })
+                } else this.isBusy = false;
             },
             printTable() {
                 console.log(this.selected);
@@ -354,16 +266,79 @@
                 }
             },
             toggleAll(checked) {
-                this.selected = checked ? this.data.map(item => JSON.parse(`{"athleteNr": ${item.athleteNr}, "runNr": ${item.runNr}}`)) : [];
+                this.selected = checked ? this.data.map(item => item.id) : [];
             },
             insertRow() {
-                if (this.rowData.athleteNr && this.rowData.school && this.rowData.name && this.rowData.birthyear && this.rowData.runNr) {
+                if (this.rowData.athleteNr && this.rowData.schoolID && this.rowData.name && this.rowData.year && this.rowData.runNr) {
                     // Add a flag to determine if row is newly added
                     this.insertTableData(this.rowData);
                     // Reset
                     this.invalidInsertInput = false;
                     this.rowData = {};
                 } else this.invalidInsertInput = true;
+            },
+            async insertTableData(row) {
+              this.isBusy = true;
+              if (row) {
+                await userService.insertTableData(this.formatTableRow(row, true), authService.getToken(), this.selectedTableID)
+                    .then(response => {
+                      console.log(`RESPONSE: ${response.data.message}`)
+                      if (response.data.fulfilled) {
+                        this.updateTable()
+                        this.isBusy = false;
+                      }
+                    })
+                    .catch(err => {
+                      console.log(`RESPONSE: ${err.data.message}`)
+                      this.isBusy = false;
+                    })
+              } else this.isBusy = false;
+            },
+            async getSchools() {
+              this.isBusy = true;
+              await userService.getSchools()
+                  .then(response => {
+                    console.log(`RESPONSE: ${response.data.message}`)
+                    if (response.data.fulfilled)
+                      this.schoolNames = response.data.data;
+                    this.isBusy = false;
+                  })
+                  .catch(err => {
+                    console.log(`RESPONSE: ${err.data.message}`)
+                    this.isBusy = false;
+                  })
+            },
+            async getTableData () {
+              this.isBusy = true;
+              await userService.getTableData(this.selectedRunNr, this.selectedTableID)
+                  .then(response => {
+                    if (response.data.fulfilled) {
+                      this.data = this.formatTableData(response.data.data, false);
+                      console.log(`RESPONSE: ${response.data.message}`)
+                      this.getSchools();
+                    }
+                  })
+                  .catch(err => {
+                    console.log(`RESPONSE: ${err.data.message}`)
+                    this.isBusy = false;
+                  })
+            },
+            sortingChanged(ctx) {
+              this.data = utils.sortTable(ctx, this.data, this.schoolNames);
+            },
+            // Filter rows
+            getItems() {
+              return this.keyword ? this.data.filter(item =>
+                  this.filterSchools(item, this.keyword.toLowerCase()) || item.runNr.toString().toLowerCase().includes(this.keyword.toLowerCase()) || item.name.toString().toLowerCase().includes(this.keyword.toLowerCase())
+              ) : this.data;
+            },
+            filterSchools(item, keyword) {
+              if (item) {
+                // Filter schools by row's school column
+                let _school = this.schoolNames.filter(school => school.schoolID === item.schoolID)[0];
+                // If school has been found, then check if it includes keyword else return false
+                return _school ? _school.name.toString().toLowerCase().includes(keyword) : false;
+              } else return false;
             }
         }
     };

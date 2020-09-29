@@ -53,10 +53,10 @@
                                         <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/>
                                     </svg>
                                 </b-button>
-                                <b-table striped hover class="container-fluid" :items="schoolNameTable" :busy="isBusy" :fields="fields" responsive="sm">
+                                <b-table striped hover class="container-fluid" :items="schoolNames" :busy="isBusy" :fields="fields" responsive="sm">
                                     <template v-if="isAdmin" v-slot:cell(checked)="row">
                                         <b-form-checkbox-group>
-                                            <b-form-checkbox v-model="selected" :value="{'SchoolID': row.item.SchoolID, 'SchoolName': row.item.SchoolName}" class="w-auto mt-2 ml-1 mr-auto"/>
+                                            <b-form-checkbox v-model="selected" :value="row.item.schoolID" class="w-auto mt-2 ml-1 mr-auto"/>
                                         </b-form-checkbox-group>
                                     </template>
                                 </b-table>
@@ -78,8 +78,8 @@
         data() {
             return {
                 fields: [
-                    {key: 'SchoolID', sortable: true, label: 'Skolas ID'},
-                    {key: 'SchoolName', sortable: true, label: 'Skolas nosaukums'},
+                    {key: 'schoolID', sortable: true, label: 'Skolas ID'},
+                    {key: 'name', sortable: true, label: 'Skolas nosaukums'},
                 ],
                 userData: authService.getCurrentUser(),
                 isAdmin: authService.getIsAdmin,
@@ -93,7 +93,7 @@
                 selectedRoles: [],
                 schoolName: '',
                 isBusy: false,
-                schoolNameTable: [],
+                schoolNames: [],
                 selected: []
             }
         },
@@ -131,31 +131,31 @@
                 this.username = '';
                 this.password = '';
             },
-            getSchools() {
+            async getSchools() {
                 this.isBusy = true;
-                userService.getSchools()
-                .then(response => {
-                    console.log(response);
-                    if (response.data)
-                        this.schoolNameTable = response.data[0];
-                    this.isBusy = false;
-                })
-                .catch(error => {
-                    console.log(error);
-                    this.isBusy = false;
-                })
+                await userService.getSchools()
+                  .then(response => {
+                    console.log(response.data)
+                      console.log(`RESPONSE: ${response.data.message}`)
+                      if (response.data.fulfilled)
+                          this.schoolNames = response.data.data;
+                      this.isBusy = false;
+                  })
+                  .catch(err => {
+                      console.log(`RESPONSE: ${err.data.message}`)
+                      this.isBusy = false;
+                  })
             },
             createSchool() {
                 console.log(`Creating school ${this.schoolName}`);
                 if (this.schoolName) {
-                    console.log(`Creating school ${this.schoolName}`);
                     userService.insertSchoolName(this.schoolName, authService.getToken())
                         .then(response => {
-                            console.log(`RESPONSE: ${response}`);
+                            console.log(`RESPONSE: ${response.data.message}`);
                             this.getSchools()
                         })
-                        .catch(error => {
-                            console.log(`ERROR: ${error}`)
+                        .catch(err => {
+                          console.log(`RESPONSE: ${err.data.message}`);
                         })
                 }
                 this.schoolName = '';
@@ -164,11 +164,12 @@
                 if (this.selected) {
                     userService.deleteSchools(this.selected, authService.getToken())
                         .then(response => {
-                            console.log(`RESPONSE: ${response}`);
-                            this.getSchools();
+                            console.log(`RESPONSE: ${response.data.message}`);
+                            if (response.data.fulfilled)
+                              this.getSchools();
                         })
-                        .catch(error => {
-                            console.log(`ERROR: ${error}`)
+                        .catch(err => {
+                          console.log(`ERROR: ${err.data.message}`);
                         })
                 }
             }
