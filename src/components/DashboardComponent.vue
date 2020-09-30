@@ -66,6 +66,24 @@
                             </div>
                         </b-card-body>
                     </b-tab>
+                    <b-tab title="Tabulu importācija/exportācija">
+                      <b-card-body>
+<!--                        <b-form @submit.prevent="" @submit="importTable" @reset="selectedFile = ''" class="row">-->
+<!--                          <b-button class="col-2 mr-2" type="submit" variant="primary">Importēt tabulu</b-button>-->
+<!--                          <label class="mt-2">Atbalstītais failu tips *.xlsx-->
+<!--                            <input type="file" ref="tableFile" name="tableXLSX"/>-->
+<!--                          </label>-->
+<!--                        </b-form>-->
+                        <form ref='uploadForm'
+                              id='uploadForm'
+                              action='http://localhost:8000/api/upload/table'
+                              method='post'
+                              encType="multipart/form-data">
+                          <input type="file" name="tableFile" />
+                          <input type='submit' value='Upload!' />
+                        </form>
+                      </b-card-body>
+                    </b-tab>
                 </b-tabs>
             </b-card>
         </div>
@@ -172,6 +190,18 @@
                           console.log(`ERROR: ${err.data.message}`);
                         })
                 }
+            },
+            importTable() {
+              let file = this.$refs.tableFile.files[0];
+              if (file) {
+                  userService.importTable(file, authService.getToken())
+                      .then(response => {
+                        console.log(`RESPONSE: ${response.data.message}`);
+                      })
+                      .catch(err => {
+                        console.log(`ERROR: ${err.data.message}`);
+                      })
+              }
             }
         }
     }

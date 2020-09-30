@@ -18,13 +18,13 @@
                     <path d="M3 7.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0z"/>
                 </svg>
             </b-button>
-
-            <!--Search fields-->
+          <b-button v-if="!printView && canEdit" @click="downloadTable" class="ml-1" variant="success">Lejupielādēt MS Excel failā</b-button>
+          <!--Search fields-->
             <b-input v-on:keydown.enter.prevent=""  v-model="keyword" placeholder="Meklēt..." class="tableSearch ml-2"></b-input>
 
             <!--Select table-->
-            <b-form-select v-model="selectedTableID" class="ml-2 col-auto" v-on:change="updateTable">
-                <b-form-select-option :value="null" v-if="!selectedTableID">Izvēlieties sportistu grupu</b-form-select-option>
+            <b-form-select v-model="genderID" class="ml-2 col-auto" v-on:change="updateTable">
+                <b-form-select-option :value="null" v-if="!genderID">Izvēlieties sportistu grupu</b-form-select-option>
                 <b-form-select-option value="0">Vīrieši</b-form-select-option>
                 <b-form-select-option value="1">Sievietes</b-form-select-option>
             </b-form-select>
@@ -72,7 +72,7 @@
                 </div>
             </template>
         </b-table>
-        <b-form v-if="canEdit && !printView && selectedTableID && selectedRunNr">
+        <b-form v-if="canEdit && !printView && genderID && selectedRunNr">
             <div class="form-row row-md-3">
                 <div class="input-group mb-3">
                     <div class="input-group-prepend">
@@ -167,7 +167,7 @@ export default {
                 isAdmin: false,
 
                 // Selected table and run number
-                selectedTableID: null,
+                genderID: null,
                 selectedRunNr: null,
 
                 // Selected rows for deletion
@@ -260,7 +260,7 @@ export default {
                 }
             },
             updateTable() {
-                if (this.selectedTableID && this.selectedRunNr) {
+                if (this.genderID && this.selectedRunNr) {
                     this.keyword = '';
                     this.getTableData();
                 }
@@ -280,7 +280,7 @@ export default {
             async insertTableData(row) {
               this.isBusy = true;
               if (row) {
-                await userService.insertTableData(this.formatTableRow(row, true), authService.getToken(), this.selectedTableID)
+                await userService.insertTableData(this.formatTableRow(row, true), authService.getToken(), this.genderID)
                     .then(response => {
                       console.log(`RESPONSE: ${response.data.message}`)
                       if (response.data.fulfilled) {
@@ -310,7 +310,7 @@ export default {
             },
             async getTableData () {
               this.isBusy = true;
-              await userService.getTableData(this.selectedRunNr, this.selectedTableID)
+              await userService.getTableData(this.selectedRunNr, this.genderID)
                   .then(response => {
                     if (response.data.fulfilled) {
                       this.data = this.formatTableData(response.data.data, false);
@@ -339,6 +339,9 @@ export default {
                 // If school has been found, then check if it includes keyword else return false
                 return _school ? _school.name.toString().toLowerCase().includes(keyword) : false;
               } else return false;
+            },
+            downloadTable() {
+              utils.downloadTable(this.genderID, 0, authService.getToken(), 'sportistu_rezultati')
             }
         }
     };

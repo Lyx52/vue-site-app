@@ -42,4 +42,16 @@ export default {
             'tableID': tableID
         })
     },
+    importTable(file, token) {
+        return axios.post( config.getRoute('importTable'), file, {headers: {'x-access-token': token, 'Content-Type': 'multipart/form-data'  }})
+    },
+    downloadTable(genderID, tableID, token) {
+        return axios.post(config.getRoute('downloadTable'),
+            {
+                'genderID': genderID,
+                'tableID': tableID
+            },
+            {responseType: 'blob', headers: {'x-access-token': token}}
+        )
+    }
 };

@@ -11,7 +11,9 @@ module.exports = {
     'createSchool': '/api/insert/school',
     'getSchools': '/api/get/schools',
     'deleteSchools': '/api/delete/schools',
-    'getTotalResults': '/api/get/results'
+    'getTotalResults': '/api/get/results',
+    'importTable': '/api/upload/table',
+    'downloadTable': '/api/download/table'
   },
   getRoute(route) {
     return this.API_URL + this.API_ROUTES[route]

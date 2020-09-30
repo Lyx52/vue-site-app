@@ -1,6 +1,6 @@
 <template>
     <div>
-        <b-jumbotron :container-fluid="true" class="m-5" bg-color="primary" text-variant="black" v-if="!printView" border-variant="dark">
+        <b-jumbotron :container-fluid="true" class="m-5" bg-color="primary" text-variant="black" border-variant="dark">
             <template v-slot:header>
                 <b>Skolu kopējie rezultāti</b>
             </template>
@@ -18,12 +18,13 @@
                         <path d="M3 7.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0z"/>
                     </svg>
                 </b-button>
-                <b-form-select v-model="tableID" v-if="!printView" class="ml-2 w-auto">
+                <b-form-select @change="getSchoolResults" v-model="genderID" v-if="!printView" class="ml-2 w-auto">
                   <b-form-select-option :value="-1">Kopā</b-form-select-option>
                   <b-form-select-option :value=1>Sievietes</b-form-select-option>
                   <b-form-select-option :value="0">Vīrieši</b-form-select-option>
                 </b-form-select>
-                <b-table id="resultTable" bordered hover class="bg-white border border-dark" :no-local-sorting="true" @sort-changed="sortingChanged" :items="resultTableData" :busy="isBusy" :fields="fields" :responsive="true"/>
+                <b-button v-if="!printView" @click="downloadTable" class="ml-1" variant="success">Lejupielādēt MS Excel failā</b-button>
+              <b-table id="resultTable" bordered hover class="bg-white border border-dark" :no-local-sorting="true" @sort-changed="sortingChanged" :items="resultTableData" :busy="isBusy" :fields="fields" :responsive="true"/>
             </template>
         </b-jumbotron>
     </div>
@@ -31,12 +32,13 @@
 
 <script>
     import userService from '../services/user.service';
+    import authService from '../services/auth.service';
     import utils from '../utils/utils'
     export default {
         name: "ResultsComponent",
         data() {
             return {
-                tableID: -1,
+                genderID: -1,
                 fields: [
                     {key: 'schoolID', sortable: true, label: "Skola",
                         formatter: (value) => {
@@ -69,7 +71,7 @@
             },
             async getSchoolResults() {
                 this.isBusy = true;
-                await userService.getSchoolResults(this.tableID)
+                await userService.getSchoolResults(this.genderID)
                     .then(response => {
                         if (response.data.fulfilled) {
                             this.resultTableData = response.data.data;
@@ -103,6 +105,9 @@
                     window.location.reload()
                 }
             },
+            downloadTable() {
+                utils.downloadTable(this.genderID, 1, authService.getToken(), 'skolu_rezultati')
+            }
         }
     }
 </script>

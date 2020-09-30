@@ -1,5 +1,6 @@
 import dateTime from 'date-and-time';
-
+import userService from "@/services/user.service";
+import { saveAs } from 'file-saver';
 const timePattern = dateTime.compile("mm:ss.SS");
 const zeroTime = dateTime.parse("00:00.00", timePattern);
 export default {
@@ -27,6 +28,22 @@ export default {
         printWindow.focus();
         printWindow.print();
         printWindow.close();
+    },
+    downloadTable(genderID, tableID, authToken, fileName) {
+        userService.downloadTable(genderID, tableID, authToken)
+            .then(response => {
+                // Log somewhat to show that the browser actually exposes the custom HTTP header
+                const fileNameHeader = "x-suggested-filename";
+                const suggestedFileName = response.headers[fileNameHeader];
+                const effectiveFileName = (suggestedFileName === undefined ? `${fileName}_${genderID < 0 ? 'kopa' : genderID > 0 ? 'jaunietes' : 'jauniesi'}.xlsx` : suggestedFileName);
+                console.log("Received header [" + fileNameHeader + "]: " + suggestedFileName + ", effective fileName: " + effectiveFileName);
+
+                // Let the user save the file.
+                saveAs(response.data, effectiveFileName);
+            })
+            .catch(err => {
+                console.log(`RESPONSE: ${err.data.message}`);
+            })
     },
     sortTable(ctx, tableData, schoolNames) {
         return tableData.sort((a, b) => {
