@@ -51,15 +51,14 @@
                     },
                     {key: 'schoolResult', sortable: true, label: 'Rezultāts',
                         formatter: (value) => {
-                            return utils.fromMilliseconds(value);
+                            return utils.fromMilliseconds(value, false);
                         }
                     },
                 ],
                 isBusy: false,
                 printView: false,
                 schoolNames: [],
-                resultTableData: [],
-                printHeader: <template><label>test</label></template>
+                resultTableData: []
             }
         },
         beforeMount() {

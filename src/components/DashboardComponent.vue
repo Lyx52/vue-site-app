@@ -66,22 +66,12 @@
                             </div>
                         </b-card-body>
                     </b-tab>
-                    <b-tab title="Tabulu importācija/exportācija">
+                    <b-tab title="Tabulu importācija">
                       <b-card-body>
-<!--                        <b-form @submit.prevent="" @submit="importTable" @reset="selectedFile = ''" class="row">-->
-<!--                          <b-button class="col-2 mr-2" type="submit" variant="primary">Importēt tabulu</b-button>-->
-<!--                          <label class="mt-2">Atbalstītais failu tips *.xlsx-->
-<!--                            <input type="file" ref="tableFile" name="tableXLSX"/>-->
-<!--                          </label>-->
-<!--                        </b-form>-->
-                        <form ref='uploadForm'
-                              id='uploadForm'
-                              action='http://localhost:8000/api/upload/table'
-                              method='post'
-                              encType="multipart/form-data">
-                          <input type="file" name="tableFile" />
-                          <input type='submit' value='Upload!' />
-                        </form>
+                        <b-form @submit.prevent="importTable" class="row">
+                          <b-button class="col-2 mr-2" type="submit" variant="primary" @click="importTable">Importēt tabulu</b-button>
+                          <input class="mt-1" type="file" id="file" ref="file" v-on:change="handleUpload"/>
+                        </b-form>
                       </b-card-body>
                     </b-tab>
                 </b-tabs>
@@ -99,6 +89,7 @@
                     {key: 'schoolID', sortable: true, label: 'Skolas ID'},
                     {key: 'name', sortable: true, label: 'Skolas nosaukums'},
                 ],
+                file: '',
                 userData: authService.getCurrentUser(),
                 isAdmin: authService.getIsAdmin,
                 showCode: false,
@@ -112,7 +103,8 @@
                 schoolName: '',
                 isBusy: false,
                 schoolNames: [],
-                selected: []
+                selected: [],
+                picked: ''
             }
         },
         beforeMount() {
@@ -191,10 +183,16 @@
                         })
                 }
             },
+            handleUpload() {
+              this.file = this.$refs.file.files[0]
+            },
             importTable() {
-              let file = this.$refs.tableFile.files[0];
-              if (file) {
-                  userService.importTable(file, authService.getToken())
+              if (this.file) {
+                  let formData = new FormData();
+
+                  formData.append('file', this.file);
+                  formData.append('genderID', this.picked)
+                  userService.importTable(formData, authService.getToken())
                       .then(response => {
                         console.log(`RESPONSE: ${response.data.message}`);
                       })

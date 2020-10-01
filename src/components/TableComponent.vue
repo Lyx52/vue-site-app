@@ -131,7 +131,11 @@ export default {
                     {key: 'schoolID', sortable: true, label: 'Skola',
                         formatter: (value) => {
                             // Filter schoolID in school list
-                            let school = this.schoolNames.filter(item => item.schoolID === value)[0];
+                            let school = this.schoolNames.filter(item => {
+                              return item.schoolID === value
+                            })[0];
+
+
                             // If school has been found return school name otherwise return empty
                             return school ? school.name : '';
                         }
@@ -214,7 +218,7 @@ export default {
                 });
             },
             formatTableRow(row, forSaving) {
-                row.result = forSaving ? utils.toMilliseconds(row.result) : utils.fromMilliseconds(parseInt(row.result));
+                row.result = forSaving ? utils.toMilliseconds(row.result) : utils.fromMilliseconds(parseInt(row.result), true);
                 row.runNr = forSaving && isNaN(row.runNr) ? 1 : row.runNr;
                 return row;
             },

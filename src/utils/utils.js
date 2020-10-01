@@ -10,10 +10,11 @@ export default {
             return 0;
         return dateTime.subtract(this.toTimeObject(timeString), zeroTime).toMilliseconds()
     },
-    fromMilliseconds(ms) {
+    fromMilliseconds(ms, forceEmptyString) {
         if (isNaN(ms))
             return '';
-        return dateTime.format(dateTime.addMilliseconds(zeroTime, ms), timePattern);
+        let time = dateTime.format(dateTime.addMilliseconds(zeroTime, ms), timePattern);
+        return time === "00:00.00" && forceEmptyString ? '' : time;
     },
     toTimeObject(timeString) {
         let time = dateTime.parse(timeString, timePattern);
@@ -52,14 +53,17 @@ export default {
             let sortByA = a[ctx.sortBy];
             let sortByB = b[ctx.sortBy];
 
-            if (!isNaN(ctx.sortBy)) {
+            if (!isNaN(ctx.sortBy) || sortByA === 0 || sortByB === 0) {
                 // If var is 0 set it to Infinity to push it back
                 sortByA = sortByA === 0 ? Infinity : sortByA;
                 sortByB = sortByB === 0 ? Infinity : sortByB;
             } else if (ctx.sortBy === 'schoolID') {
                     // Convert from SchoolID/school > SchoolName
-                    sortByA = schoolNames.filter(item => item.schoolID === sortByA)[0].name;
-                    sortByB = schoolNames.filter(item => item.schoolID === sortByB)[0].name;
+                    let sortA = schoolNames.filter(item => item.schoolID === sortByA)[0];
+                    sortByA = sortA ? sortA.name : '';
+
+                    let sortB = schoolNames.filter(item => item.schoolID === sortByB)[0];
+                    sortByB = sortB ? sortB.name : '';
             }
 
             if (sortByA < sortByB) {
